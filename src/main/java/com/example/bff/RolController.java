@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 @RequestMapping("/roles")
 public class RolController {
 
-private final String baseUrl = "http://host.docker.internal:7071/api/roles";
+private final String baseUrl = "https://functionrolecn2.azurewebsites.net/api/roles";
     private final RestTemplate restTemplate = new RestTemplate();
 
     @GetMapping
