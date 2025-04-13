@@ -7,20 +7,25 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/roles")
 public class RolController {
-
-private final String baseUrl = "https://functionrolecn2.azurewebsites.net/api/roles";
+    private static final String GET_ROLES_URL = "https://functionrolecn2.azurewebsites.net/api/GetRoles";
+    private static final String CREATE_ROLE_URL = "https://functionrolecn2.azurewebsites.net/api/CreateRole";
+    private static final String UPDATE_ROLE_URL = "https://functionrolecn2.azurewebsites.net/api/UpdateRole";
     private final RestTemplate restTemplate = new RestTemplate();
+    private final HttpHeaders headers = new HttpHeaders();
+
+    public RolController() {
+        headers.setContentType(MediaType.APPLICATION_JSON);
+    }
 
     @GetMapping
     public ResponseEntity<String> getAllRoles() {
         try {
-            return restTemplate.getForEntity(baseUrl, String.class);
+            return restTemplate.getForEntity(GET_ROLES_URL, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
@@ -31,7 +36,7 @@ private final String baseUrl = "https://functionrolecn2.azurewebsites.net/api/ro
     @GetMapping("/byId")
     public ResponseEntity<String> getRolById(@RequestParam String id) {
         try {
-            return restTemplate.getForEntity(baseUrl + "?id=" + id, String.class);
+            return restTemplate.getForEntity(GET_ROLES_URL + "?id=" + id, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
@@ -42,7 +47,8 @@ private final String baseUrl = "https://functionrolecn2.azurewebsites.net/api/ro
     @PostMapping
     public ResponseEntity<String> createRol(@RequestBody String rol) {
         try {
-            return restTemplate.postForEntity(baseUrl, rol, String.class);
+            HttpEntity<String> request = new HttpEntity<>(rol, headers);
+            return restTemplate.postForEntity(CREATE_ROLE_URL, request, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
@@ -50,13 +56,11 @@ private final String baseUrl = "https://functionrolecn2.azurewebsites.net/api/ro
         }
     }
 
-    @PutMapping
+    @PostMapping("/update")
     public ResponseEntity<String> updateRol(@RequestBody String rol) {
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<String> requestEntity = new HttpEntity<>(rol, headers);
-            return restTemplate.exchange(baseUrl, HttpMethod.PUT, requestEntity, String.class);
+            HttpEntity<String> request = new HttpEntity<>(rol, headers);
+            return restTemplate.postForEntity(UPDATE_ROLE_URL, request, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
