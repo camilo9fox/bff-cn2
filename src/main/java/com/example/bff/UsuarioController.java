@@ -7,20 +7,26 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
-
-    private final String baseUrl = "https://crudusercn2.azurewebsites.net/api/usuarios";
+    private static final String QUERY_URL = "https://cn2cruduser.azurewebsites.net/api/graphql-query";
+    private static final String MUTATION_URL = "https://cn2cruduser.azurewebsites.net/api/graphql-mutation";
     private final RestTemplate restTemplate = new RestTemplate();
+    private final HttpHeaders headers = new HttpHeaders();
+
+    public UsuarioController() {
+        headers.setContentType(MediaType.APPLICATION_JSON);
+    }
 
     @GetMapping
     public ResponseEntity<String> getUsuarios() {
         try {
-            return restTemplate.getForEntity(baseUrl, String.class);
+            String queryBody = "{\"query\": \"query { usuarios { id username email rol { nombreRol } } }\"}";
+            HttpEntity<String> request = new HttpEntity<>(queryBody, headers);
+            return restTemplate.postForEntity(QUERY_URL, request, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
@@ -31,7 +37,12 @@ public class UsuarioController {
     @GetMapping("/byId")
     public ResponseEntity<String> getUsuarioById(@RequestParam String id) {
         try {
-            return restTemplate.getForEntity(baseUrl + "?id=" + id, String.class);
+            String queryBody = String.format(
+                "{\"query\": \"query { usuario(id: \\\"%s\\\") { id username email rol { nombreRol } } }\"}", 
+                id
+            );
+            HttpEntity<String> request = new HttpEntity<>(queryBody, headers);
+            return restTemplate.postForEntity(QUERY_URL, request, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
@@ -40,9 +51,15 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<String> createUsuario(@RequestBody String usuario) {
+    public ResponseEntity<String> createUsuario(@RequestBody String usuarioJson) {
         try {
-            return restTemplate.postForEntity(baseUrl, usuario, String.class);
+            String mutationBody = String.format(
+                "{\"query\": \"mutation CreateUser($input: UsuarioInput!) { crearUsuario(input: $input) { id username email } }\", " +
+                "\"variables\": {\"input\": %s}}", 
+                usuarioJson
+            );
+            HttpEntity<String> request = new HttpEntity<>(mutationBody, headers);
+            return restTemplate.postForEntity(MUTATION_URL, request, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
@@ -51,12 +68,15 @@ public class UsuarioController {
     }
 
     @PutMapping
-    public ResponseEntity<String> updateUsuario(@RequestBody String usuario) {
+    public ResponseEntity<String> updateUsuario(@RequestBody String usuarioJson) {
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<String> requestEntity = new HttpEntity<>(usuario, headers);
-            return restTemplate.exchange(baseUrl, HttpMethod.PUT, requestEntity, String.class);
+            String mutationBody = String.format(
+                "{\"query\": \"mutation UpdateUser($input: UsuarioUpdateInput!) { actualizarUsuario(input: $input) { id username email rol { nombreRol } } }\", " +
+                "\"variables\": {\"input\": %s}}", 
+                usuarioJson
+            );
+            HttpEntity<String> request = new HttpEntity<>(mutationBody, headers);
+            return restTemplate.postForEntity(MUTATION_URL, request, String.class);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
@@ -64,15 +84,19 @@ public class UsuarioController {
         }
     }
 
-  @DeleteMapping
-  public ResponseEntity<String> deleteUsuario(@RequestParam String id) {
-      try {
-          restTemplate.delete(baseUrl + "?id=" + id);
-          return ResponseEntity.ok("Usuario eliminado");
-      } catch (HttpClientErrorException e) {
-          return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-      } catch (Exception e) {
-          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-      }
-  }
+    @DeleteMapping
+    public ResponseEntity<String> deleteUsuario(@RequestParam String id) {
+        try {
+            String mutationBody = String.format(
+                "{\"query\": \"mutation { eliminarUsuario(id: \\\"%s\\\") }\"}", 
+                id
+            );
+            HttpEntity<String> request = new HttpEntity<>(mutationBody, headers);
+            return restTemplate.postForEntity(MUTATION_URL, request, String.class);
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }
