@@ -15,6 +15,7 @@ public class RolController {
     private static final String GET_ROLES_URL = "https://functionrolecn2.azurewebsites.net/api/GetRoles";
     private static final String CREATE_ROLE_URL = "https://functionrolecn2.azurewebsites.net/api/CreateRole";
     private static final String UPDATE_ROLE_URL = "https://functionrolecn2.azurewebsites.net/api/UpdateRole";
+    private static final String DELETE_ROLE_URL = "https://functionrolecn2.azurewebsites.net/api/DeleteRole";
     private final RestTemplate restTemplate = new RestTemplate();
     private final HttpHeaders headers = new HttpHeaders();
 
@@ -61,6 +62,19 @@ public class RolController {
         try {
             HttpEntity<String> request = new HttpEntity<>(rol, headers);
             return restTemplate.postForEntity(UPDATE_ROLE_URL, request, String.class);
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+        }
+
+    @DeleteMapping("/DeleteRole")
+    public ResponseEntity<String> deleteRol(@RequestParam String id) {
+        String url = DELETE_ROLE_URL + "?id=" + id;
+        try {
+            restTemplate.delete(url);
+            return ResponseEntity.ok("Rol eliminado correctamente");
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
